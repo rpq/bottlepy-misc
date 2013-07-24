@@ -1,0 +1,1 @@
+create unique index user_session_session_id_uniqueness on user_session (session_id,session_name);
