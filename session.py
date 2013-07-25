@@ -130,6 +130,24 @@ if __name__ == '__main__':
 			self.application_name = 'blahblah'
 			self._setup_sqlalchemy()
 
+		def _extract_cookies(self, response):
+			import Cookie as cookie
+			cookies = [v for k, v in response.headers.items() if k.lower() == 'set-cookie']
+			self.assertTrue(
+				'set-cookie' in map(
+					lambda x: x.lower(), response.headers.keys()))
+			simple_cookies = [cookie.SimpleCookie(r) for r in cookies]
+			self.assertTrue(len(simple_cookies) > 0)
+			return simple_cookies
+
+		def _simple_cookies_to_headers(self, sc):
+			a = []
+			for s in sc:
+				d = {}
+				d['Cookie'] = s.output(header='').strip()
+				a.append(d)
+			return a
+
 		def test_cookie_name(self):
 			ss = ServerSession(self.application_name,
 				self.sa_session,
@@ -137,27 +155,27 @@ if __name__ == '__main__':
 			self.assertIn(self.application_name, ss.get_cookie_name())
 
 		def test_create_and_existing_new_cookie(self):
-			import Cookie as cookie
-
 			req = urllib2.Request(url='http://www.winscores.com:8080')
 			response = urllib2.urlopen(req)
-			print response.headers.items()
-			cookies = [v for k, v in response.headers.items() if k.lower() == 'set-cookie']
-			print 'cookies fetched from first response header: %s' % \
-				cookies
-			simple_cookies = [cookie.SimpleCookie(r) for r in cookies]
-			print simple_cookies
-			cookie_headers = dict([('Cookie', s.output(header='').strip()) for s in simple_cookies])
-			print cookie_headers
+			simple_cookies = self._extract_cookies(response)
+			self.assertTrue(response is not None)
+			cookie_headers = self._simple_cookies_to_headers(simple_cookies)
+			self.assertTrue(
+				'Cookie' not in [
+					c.values() for c in cookie_headers])
+			self.assertRegexpMatches(simple_cookies[0].output(header=''),
+				r'[a-z_]*=[a-z0-9]*')
+			return simple_cookies, cookie_headers
 
+		def test_get_existing_cookie(self):
+			simple_cookies, cookie_headers = \
+				self.test_create_and_existing_new_cookie()
+			prev_cookie_id = simple_cookies[0].value
 			req = urllib2.Request(
 				url='http://www.winscores.com:8080',
 				headers=cookie_headers)
-			print 'second request\'s header items=%s' % req.header_items()
 			response = urllib2.urlopen(req)
-			print 'second requests\'s response\'s headers %s' % response.headers
-
-		def test_get_existing_cookie(self):
-			pass
+			simple_cookies = self._extract_cookies(response)
+			self.assertEqual(prev_cookie_id, simple_cookies[0].value)
 
 	unittest.main()
