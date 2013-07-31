@@ -68,9 +68,11 @@ class ServerSession(object):
 	def update_last_access_at(self, client_cookie_id):
 		self.get_server_cookie(client_cookie_id)
 		self.user_session.expires = self.compute_expiration()
-		self.user_session.last_access_at = naive_to_aware(datetime.datetime.utcnow())
+		self.user_session.last_access_at = naive_to_aware(
+			datetime.datetime.utcnow())
 		self.sqlalchemy_session.add(self.user_session)
 		self.sqlalchemy_session.commit()
+		self.set_client_cookie(client_cookie_id)
 
 	def set_client_cookie(self, client_cookie_id):
 		self.bottle_response.set_cookie(
@@ -79,7 +81,6 @@ class ServerSession(object):
 
 	def create_user_session(self, anonymous=True):
 		client_cookie_id = self.sqlalchemy_models.UserSession.create_id()
-		self.set_client_cookie(client_cookie_id)
 		self.user_session = self.sqlalchemy_models.UserSession(
 			anonymous=anonymous,
 			session_name=self.get_cookie_name(),
@@ -88,6 +89,7 @@ class ServerSession(object):
 			last_access_at=naive_to_aware(datetime.datetime.utcnow()))
 		self.sqlalchemy_session.add(self.user_session)
 		self.sqlalchemy_session.commit()
+		self.set_client_cookie(client_cookie_id)
 		return self.user_session
 
 	def cookie_expired(self):
@@ -120,6 +122,8 @@ if __name__ == '__main__':
 
 	import db
 
+	SERVER_HOST = 'localhost:8080'
+
 	class TestSession(unittest.TestCase):
 
 		def _setup_sqlalchemy(self):
@@ -133,6 +137,9 @@ if __name__ == '__main__':
 		def _extract_cookies(self, response):
 			import Cookie as cookie
 			cookies = [v for k, v in response.headers.items() if k.lower() == 'set-cookie']
+
+			print 'returned headers.. %s' % map(
+					lambda x: x.lower(), response.headers.keys())
 			self.assertTrue(
 				'set-cookie' in map(
 					lambda x: x.lower(), response.headers.keys()))
@@ -155,7 +162,7 @@ if __name__ == '__main__':
 			self.assertIn(self.application_name, ss.get_cookie_name())
 
 		def test_create_and_existing_new_cookie(self):
-			req = urllib2.Request(url='http://www.winscores.com:8080')
+			req = urllib2.Request(url='http://localhost:8080')
 			response = urllib2.urlopen(req)
 			simple_cookies = self._extract_cookies(response)
 			self.assertTrue(response is not None)
@@ -170,12 +177,14 @@ if __name__ == '__main__':
 		def test_get_existing_cookie(self):
 			simple_cookies, cookie_headers = \
 				self.test_create_and_existing_new_cookie()
-			prev_cookie_id = simple_cookies[0].value
+			prev_cookie_id = simple_cookies[0].values()[0].value
+			print 'sending headers... %s' % cookie_headers[0]
 			req = urllib2.Request(
-				url='http://www.winscores.com:8080',
-				headers=cookie_headers)
+				url='http://localhost:8080',
+				headers=cookie_headers[0])
 			response = urllib2.urlopen(req)
 			simple_cookies = self._extract_cookies(response)
-			self.assertEqual(prev_cookie_id, simple_cookies[0].value)
+			self.assertEqual(prev_cookie_id,
+				simple_cookies[0].values()[0].value)
 
 	unittest.main()
