@@ -53,13 +53,10 @@ class Session(object):
 			return False
 
 	def is_valid(self):
-		print 'exists=%s' % self.exists()
-		print 'expired=%s' % self.expired()
 		return self.exists() and not self.expired()
 
 	def exists(self):
 		session_id = self.cookie_request.get()
-		print 'found session id in cookie %s' % session_id
 		if session_id is None:
 			return False
 
@@ -130,7 +127,6 @@ class ServerSession(object):
 
 	def create_new_session_id(self, **kwargs):
 		session_id = self.sa_models.UserSession.create_id()
-		print 'created session_id=%s' % session_id
 		user_session = self.sa_models.UserSession(
 			anonymous=kwargs.pop('anonymous'),
 			session_name=kwargs.pop('session_name'),
@@ -217,7 +213,6 @@ if __name__ == '__main__':
 			simple_cookies, cookie_headers = self.test_create_cookie()
 			prev_cookie_id = simple_cookies[0][
 				self.cookie_session_name].value
-			print cookie_headers[0]
 			req = urllib2.Request(
 				url='http://localhost:8080',
 				headers=cookie_headers[0])

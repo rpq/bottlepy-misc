@@ -13,6 +13,9 @@ APPLICATION_NAME = 'testapp'
 def session_cookie_init(fn):
 	def wrapper(*args, **kwargs):
 		db_session = db.db_session()
+
+		# session class should handle integrityerror exceptions, etc
+		# starting here
 		s = session.Session(
 			session_name=APPLICATION_NAME,
 			server_session=session.ServerSession(db_session, db),
@@ -23,6 +26,8 @@ def session_cookie_init(fn):
 			session_id = s.create()
 			bottle.request.environ['bottle.request']['session'] = \
 				session_id
+		# ending here
+
 		try:
 			fn(*args, **kwargs)
 		except:

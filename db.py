@@ -37,11 +37,8 @@ class UserSession(Base):
 		SALT = '09123kasdc012409asd8fi0a9s'
 		h = hashlib.new('sha256')
 		dt = helpers.to_strftime(datetime.datetime.utcnow())
-		print 'id_dt=%s' % dt
 		string_ = '{0}{1}'.format(dt, SALT)
-		print 'id_hash=%s' % string_
 		h.update(string_)
-		print 'id_hexdigest=%s' % h.hexdigest()
 		return h.hexdigest()
 
 #db_session = sessionmaker(bind=engine)
