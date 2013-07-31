@@ -12,20 +12,27 @@ APPLICATION_NAME = 'testapp'
 
 def session_cookie_init(fn):
 	def wrapper(*args, **kwargs):
-		s = session.ServerSession(APPLICATION_NAME, db.db_session, db,
-			bottle.request, bottle.response)
-		print 'bottle.request=%s' % [(k, v,) for k, v in bottle.request.headers.iteritems()]
-		if s.is_valid_session():
-			s.update_last_access_at(s.get_client_cookie())
+		db_session = db.db_session()
+		s = session.Session(
+			session_name=APPLICATION_NAME,
+			server_session=session.ServerSession(db_session, db),
+			bottle=bottle)
+		if s.is_valid():
+			session_id = s.update()
 		else:
-			s.create_user_session()
-		bottle.request.environ['bottle.request']['session'] = \
-			s.user_session.session_id
-		return fn(*args, **kwargs)
+			session_id = s.create()
+			bottle.request.environ['bottle.request']['session'] = \
+				session_id
+		try:
+			fn(*args, **kwargs)
+		except:
+			db_session.rollback()
+			raise
+		db_session.close()
 	return wrapper
 
-@app.get('/', apply=session_cookie_init)
+@app.get('/', apply=[session_cookie_init,])
 def index():
-	return 'got the bottle request environ...'
+	return 'index'
 
-bottle.run(app, host='localhost', port=8080, debug=True)
+bottle.run(app, host='localhost', server='gunicorn', port=8080, debug=True)

@@ -12,7 +12,7 @@ def naive_to_aware(dt, tz=pytz.utc):
 	return dt.replace(tzinfo=tz)
 
 def to_strftime(dt):
-	return dt.strftime('%Y%m%d%H%M%S')
+	return dt.strftime('%Y%m%d%H%M%S%f')
 
 if __name__ == '__main__':
 	import unittest

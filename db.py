@@ -6,7 +6,7 @@ import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 
 import helpers
 
@@ -36,15 +36,16 @@ class UserSession(Base):
 	def create_id(cls):
 		SALT = '09123kasdc012409asd8fi0a9s'
 		h = hashlib.new('sha256')
-		string_ = '{0}{1}'.format(
-			helpers.to_strftime(datetime.datetime.utcnow()), SALT)
-		print 'here is the string to generate_=%s' % string_
+		dt = helpers.to_strftime(datetime.datetime.utcnow())
+		print 'id_dt=%s' % dt
+		string_ = '{0}{1}'.format(dt, SALT)
+		print 'id_hash=%s' % string_
 		h.update(string_)
-		print 'generated brand new digest=%s' % h.hexdigest()
+		print 'id_hexdigest=%s' % h.hexdigest()
 		return h.hexdigest()
 
-db_session = sessionmaker(bind=engine)
-db_session = db_session()
+#db_session = sessionmaker(bind=engine)
+db_session = scoped_session(sessionmaker(bind=engine))
 
 if __name__ == '__main__':
 	Base.metadata.create_all(engine)
