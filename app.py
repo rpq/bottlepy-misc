@@ -49,6 +49,7 @@ def db_init(fn):
 @app.get('/', apply=[session_cookie_init, db_init])
 def index(session, db_, models):
     import simplejson
+
     u = db_.query(models.UserSession).filter_by(session_id=session).first()
     if u.session_data:
         loaded = simplejson.loads(u.session_data)
