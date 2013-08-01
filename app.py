@@ -7,9 +7,9 @@ import session
 import db
 
 app = bottle.Bottle()
-app.config['session.keyword'] = 's'
-app.config['db.keyword'] = 'd'
-app.config['db_models.keyword'] = 'm'
+app.config['session.keyword'] = 'session'
+app.config['db.keyword'] = 'db_'
+app.config['db_models.keyword'] = 'models'
 
 APPLICATION_NAME = 'testapp'
 
@@ -17,15 +17,15 @@ def session_cookie_init(fn):
     def wrapper(*args, **kwargs):
         db_session = db.db_session()
 
-        s = session.Session(
+        session_ = session.Session(
             session_name=APPLICATION_NAME,
             server_session=session.ServerSession(db_session, db),
             bottle=bottle)
-        if s.is_valid():
-            session_id = s.update(secure=False)
+        if session_.is_valid():
+            session_id = session_.update(secure=False)
             bottle.request.session = session_id
         else:
-            session_id = s.create(secure=False)
+            session_id = session_.create(secure=False)
             bottle.request.session = session_id
             id(bottle.request)
 
@@ -47,9 +47,9 @@ def db_init(fn):
     return wrapper
 
 @app.get('/', apply=[session_cookie_init, db_init])
-def index(s, d, m):
+def index(session, db_, models):
     import simplejson
-    u = d.query(m.UserSession).filter_by(session_id=s).first()
+    u = db_.query(models.UserSession).filter_by(session_id=session).first()
     if u.session_data:
         loaded = simplejson.loads(u.session_data)
     else:
@@ -58,8 +58,8 @@ def index(s, d, m):
     load = simplejson.dumps({'count': loaded.get('count',0) + 1})
 
     u.session_data = load
-    d.add(u)
-    d.commit()
+    db_.add(u)
+    db_.commit()
     print u.session_data
     return 'hello world, click count=%s' % u.session_data
 
