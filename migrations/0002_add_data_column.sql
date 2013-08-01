@@ -1,0 +1,1 @@
+alter table user_session add column session_data varchar(250);

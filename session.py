@@ -18,7 +18,7 @@ class Session(object):
 				application_name=self.session_name,
 				bottle_response=bottle.response)
 
-	def create(self):
+	def create(self, **kwargs):
 		cookie_id = self.cookie_request.get()
 		if cookie_id and self.server_session.get_session_entry(cookie_id):
 			raise Exception('Session ID already set to: {0}'.format(
@@ -26,16 +26,16 @@ class Session(object):
 		session_id = self.server_session.create_new_session_id(
 			anonymous=True,
 			session_name=self.session_name)
-		self.cookie_response.set(session_id)
+		self.cookie_response.set(session_id, **kwargs)
 		return session_id
 
-	def update(self):
+	def update(self, **kwargs):
 		session_id = self.cookie_request.get()
 		if not session_id:
 			raise Exception(
 				'Unable to update because Session ID is not set')
 		self.server_session.update(session_id)
-		self.cookie_response.set(session_id)
+		self.cookie_response.set(session_id, **kwargs)
 		return session_id
 
 	def expired(self):
@@ -96,10 +96,10 @@ class CookieResponse(SessionCookie):
 
 		super(CookieResponse, self).__init__(**kwargs)
 
-	def set(self, session_id):
+	def set(self, session_id, **kwargs):
 		self.bottle_response.set_cookie(
 			self.get_cookie_name(),
-			session_id)
+			session_id, **kwargs)
 
 class ServerSession(object):
 	SESSION_EXPIRES = datetime.timedelta(minutes=30)
